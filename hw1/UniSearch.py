@@ -45,7 +45,6 @@ class Graph(object):
                     heappush(frontier, [distance + total_distance, child])
                 elif self.search_frontier(frontier, child) > distance + total_distance:
                     self.replace_frontier(frontier, child, distance + total_distance)
-            print frontier
 
     @staticmethod
     def search_frontier(frontier, item):
@@ -63,7 +62,7 @@ class Graph(object):
                 return 0
         return 1
 
-def main(*args, **kwargs):
+def main():
     graph = Graph()
     graph.build_graph('input.txt')
     solution = graph.uni_search('Start', 'Goal')
