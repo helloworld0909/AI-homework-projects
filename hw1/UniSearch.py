@@ -25,6 +25,9 @@ class Graph(object):
                     self._edges[tuple[0]] = [(int(tuple[2]), tuple[1])]
                 else:
                     self._edges[tuple[0]].append((int(tuple[2]), tuple[1]))
+        # Sort edges to break ties alphabetically
+        for edge in self._edges.values():
+            sorted(edge, key=lambda a: a[1])
 
     def uni_search(self, start, goal):
         # frontier is a heap
@@ -39,7 +42,6 @@ class Graph(object):
             if node == goal:
                 return '->'.join(solution)
             explored.add(node)
-            # Use sorted to break ties alphabetically
             for distance, child in self._edges[node]:
                 if child not in explored and self.search_frontier(frontier, child) == -1:
                     heappush(frontier, [distance + total_distance, child])
