@@ -43,17 +43,19 @@ class Graph(object):
                 return '->'.join(solution)
             explored.add(node)
             for distance, child in self._edges[node]:
-                if child not in explored and self.search_frontier(frontier, child) == -1:
+                index, new_distance = self.search_frontier(frontier, child)
+                if child not in explored and index == -1:
                     heappush(frontier, [distance + total_distance, child])
-                elif self.search_frontier(frontier, child) > distance + total_distance:
+                elif new_distance > distance + total_distance:
                     self.replace_frontier(frontier, child, distance + total_distance)
 
     @staticmethod
     def search_frontier(frontier, item):
-        for node in frontier:
+        for index, node in enumerate(frontier):
             if item == node[1]:
-                return node[0]
-        return -1
+                # return index, dist_edge
+                return index, node[0]
+        return -1, -1
 
     @staticmethod
     def replace_frontier(frontier, item, distance):
