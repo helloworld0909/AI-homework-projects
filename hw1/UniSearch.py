@@ -30,14 +30,14 @@ class Graph(object):
             sorted(edge, key=lambda a: a[1])
 
     def uni_search(self, start, goal):
-        # frontier is a heap
-        frontier = [[0, start]]
+        # Keep frontier as a heap using heapq, to make sure the top node of frontier has least distance
+        frontier = [[0, start]]    # [[total_distance, node], ...]
         explored = set()
         solution = []
         while True:
             if not frontier:
                 return 'Not Found'
-            total_distance, node = heappop(frontier)    # (distance, a)           
+            total_distance, node = heappop(frontier)    # [total_distance, a]          
             solution.append(node)
             if node == goal:
                 return '->'.join(solution)
@@ -45,15 +45,17 @@ class Graph(object):
             for distance, child in self._edges[node]:
                 index, new_distance = self.search_frontier(frontier, child)
                 if child not in explored and index == -1:
+                    # Push new child into frontier
                     heappush(frontier, [distance + total_distance, child])
                 elif new_distance > distance + total_distance:
+                    # Update distance
                     self.replace_frontier(frontier, child, distance + total_distance)
 
     @staticmethod
     def search_frontier(frontier, item):
         for index, node in enumerate(frontier):
             if item == node[1]:
-                # return index, dist_edge
+                # return index, length of edge
                 return index, node[0]
         return -1, -1
 
