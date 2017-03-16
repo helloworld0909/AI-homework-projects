@@ -35,12 +35,12 @@ class Graph(object):
         explored = set()
         while True:
             if not frontier:
-                return 'Not Found'
+                return 'Unreachable'
             total_distance, node, solution = heappop(frontier)    # [total_distance, a, solution]
             if node == goal:
                 return solution
             explored.add(node)
-            for distance, child in self._edges[node]:
+            for distance, child in self._edges.get(node, []):
                 index, old_distance = self.search_frontier(frontier, child)
                 if child not in explored and index == -1:
                     # Push new child into frontier                    
