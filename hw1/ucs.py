@@ -33,6 +33,8 @@ class Graph(object):
         # Keep frontier as a heap using heapq, to make sure the top node of frontier has least distance
         frontier = [[0, start, start]]    # [[total_distance, node, solution], ...]
         explored = set()
+        if start not in self._nodes or goal not in self._nodes:
+            return 'Unreachable'
         while True:
             if not frontier:
                 return 'Unreachable'
