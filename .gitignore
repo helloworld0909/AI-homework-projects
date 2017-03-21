@@ -97,3 +97,4 @@ ENV/
 *.pdf
 *.zip
 OJ*
+.idea/*
