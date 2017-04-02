@@ -489,12 +489,17 @@ def foodHeuristic(state, problem):
     Subsequent calls to this heuristic can access
     problem.heuristicInfo['wallCount']
     """
+
+    def manhattan(xy1, xy2):
+        return abs(xy1[0] - xy2[0]) + abs(xy1[1] - xy2[1])
+
     position, foodGrid = state
     foodCluster = clusterFoodGrid(foodGrid, problem.walls)
-    heur = 0
-    for root in foodCluster.keys():
-        heur += abs(position[0] - root[0]) + abs(position[1] - root[1])
-    return heur
+    distance = map(lambda root: mazeDistance(root, position, problem.startingGameState), foodCluster.keys())
+    if not distance:
+        return 0
+    else:
+        return max(distance)
 
 
 class Union(object):
@@ -529,7 +534,7 @@ class Union(object):
                     if key in unions:
                         unions[key].append((x, y))
                     else:
-                        unions[key] = [key]
+                        unions[key] = [(x, y)]
         return unions
 
 
