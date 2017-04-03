@@ -298,6 +298,7 @@ class CornersProblem(search.SearchProblem):
         self._expanded = 0  # DO NOT CHANGE; Number of search nodes expanded
         # Please add any code here which you would like to use
         # in initializing the problem
+        self.startingGameState = startingGameState
 
     def getStartState(self):
         """
@@ -364,6 +365,9 @@ class CornersProblem(search.SearchProblem):
         return len(actions)
 
 
+def manhattan(xy1, xy2):
+    return abs(xy1[0] - xy2[0]) + abs(xy1[1] - xy2[1])
+
 def cornersHeuristic(state, problem):
     """
     A heuristic for the CornersProblem that you defined.
@@ -380,17 +384,18 @@ def cornersHeuristic(state, problem):
     corners = problem.corners  # These are the corner coordinates
     walls = problem.walls  # These are the walls of the maze, as a Grid (game.py)
 
-    def manhattan(state, corners):
-        position = state[0]
-        heur = 0
-        for cornerIndex, cornerStatus in enumerate(state[1]):
-            if not cornerStatus:
-                cornerPosition = corners[cornerIndex]
-                heur += abs(position[0] - cornerPosition[0]) + abs(position[1] - cornerPosition[1])
-        return heur
+    position = state[0]
+    cornerDistance = []
+    for cornerIndex, cornerStatus in enumerate(state[1]):
+        if not cornerStatus:
+            cornerPosition = corners[cornerIndex]
+            # cornerDistance.append(manhattan(cornerPosition, position))
+            cornerDistance.append(mazeDistance(cornerPosition, position, problem.startingGameState))
 
-    # TODO CornersHeuristic
-    return manhattan(state, corners)
+    if not cornerDistance:
+        return 0
+    else:
+        return max(cornerDistance)
 
 
 class AStarCornersAgent(SearchAgent):
@@ -490,9 +495,6 @@ def foodHeuristic(state, problem):
     problem.heuristicInfo['wallCount']
     """
 
-    def manhattan(xy1, xy2):
-        return abs(xy1[0] - xy2[0]) + abs(xy1[1] - xy2[1])
-
     position, foodGrid = state
     foodCluster = clusterFoodGrid(foodGrid, problem.walls)
     distance = map(lambda root: mazeDistance(root, position, problem.startingGameState), foodCluster.keys())
@@ -502,7 +504,10 @@ def foodHeuristic(state, problem):
         return max(distance)
 
 
+
 class Union(object):
+    """Union-Find algorithm to cluster food dots"""
+
     def __init__(self, grid):
         self.height = grid.height
         self.width = grid.width
@@ -578,8 +583,7 @@ class ClosestDotSearchAgent(SearchAgent):
         walls = gameState.getWalls()
         problem = AnyFoodSearchProblem(gameState)
 
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        return search.uniformCostSearch(problem)
 
 
 class AnyFoodSearchProblem(PositionSearchProblem):
@@ -615,8 +619,7 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         """
         x, y = state
 
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        return self.food[x][y]
 
 
 def mazeDistance(point1, point2, gameState):
