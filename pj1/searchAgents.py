@@ -365,9 +365,6 @@ class CornersProblem(search.SearchProblem):
         return len(actions)
 
 
-def manhattan(xy1, xy2):
-    return abs(xy1[0] - xy2[0]) + abs(xy1[1] - xy2[1])
-
 def cornersHeuristic(state, problem):
     """
     A heuristic for the CornersProblem that you defined.
@@ -389,8 +386,7 @@ def cornersHeuristic(state, problem):
     for cornerIndex, cornerStatus in enumerate(state[1]):
         if not cornerStatus:
             cornerPosition = corners[cornerIndex]
-            # cornerDistance.append(manhattan(cornerPosition, position))
-            cornerDistance.append(mazeDistance(cornerPosition, position, problem.startingGameState))
+            cornerDistance.append(util.manhattanDistance(cornerPosition, position))
 
     if not cornerDistance:
         return 0
@@ -496,62 +492,39 @@ def foodHeuristic(state, problem):
     """
 
     position, foodGrid = state
-    foodCluster = clusterFoodGrid(foodGrid, problem.walls)
-    distance = map(lambda root: mazeDistance(root, position, problem.startingGameState), foodCluster.keys())
-    if not distance:
+
+    foodList = foodGrid.asList()
+    if not foodList:
         return 0
+
+    corners = set()
+    for sign_x, sign_y in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
+        corners.add(max(foodList, key=lambda pos: sign_x * pos[0] + sign_y * pos[1]))
+
+    foodNodes = list(corners)
+    foodEdges = []
+    for i in range(len(foodNodes)):
+        for j in range(i + 1, len(foodNodes)):
+            foodEdges.append((foodNodes[i], foodNodes[j]))
+    foodDistances = map(lambda edge: mazeDistanceCache(edge[0], edge[1], problem), foodEdges)
+
+    posEdges = zip([position] * len(foodNodes), foodNodes)
+    posDistances = map(lambda edge: mazeDistanceCache(edge[0], edge[1], problem), posEdges)
+
+    heur = 0
+    heur += min(posDistances)
+    heur += sum(sorted(foodDistances)[:len(foodNodes) - 1]) # Get top K distances, K=len(foodNodes)-1
+    return heur
+
+
+def mazeDistanceCache(point1, point2, problem):
+    edge = tuple(sorted((point1, point2)))
+    if edge in problem.heuristicInfo:
+        return problem.heuristicInfo[edge]
     else:
-        return max(distance)
-
-
-
-class Union(object):
-    """Union-Find algorithm to cluster food dots"""
-
-    def __init__(self, grid):
-        self.height = grid.height
-        self.width = grid.width
-        self.count = grid.height * grid.width
-        self.grid = [[(x, y) for y in range(grid.height)] for x in range(grid.width)]
-
-    def find(self, xy):
-        x, y = xy
-        while (x, y) <> self.grid[x][y]:
-            x, y = self.grid[x][y]
-        return x, y
-
-    def union(self, xy1, xy2):
-        root1 = self.find(xy1)
-        root2 = self.find(xy2)
-        if root1 == root2:
-            return 0
-        else:
-            self.grid[root1[0]][root1[1]] = root2
-            self.count -= 1
-            return 1
-
-    def toDict(self, foodGrid):
-        unions = {}
-        for x in range(self.width):
-            for y in range(self.height):
-                key = self.find((x, y))
-                if foodGrid[x][y]:
-                    if key in unions:
-                        unions[key].append((x, y))
-                    else:
-                        unions[key] = [(x, y)]
-        return unions
-
-
-def clusterFoodGrid(foodGrid, walls):
-    foodUnion = Union(foodGrid)
-    for x in range(foodGrid.width - 1):
-        for y in range(foodGrid.height - 1):
-            if foodGrid[x][y] and foodGrid[x + 1][y]:
-                foodUnion.union((x, y), (x + 1, y))
-            if foodGrid[x][y] and foodGrid[x][y + 1]:
-                foodUnion.union((x, y), (x, y + 1))
-    return foodUnion.toDict(foodGrid)
+        distance = mazeDistance(point1, point2, problem.startingGameState)
+        problem.heuristicInfo[edge] = distance
+        return distance
 
 
 class ClosestDotSearchAgent(SearchAgent):
