@@ -38,6 +38,7 @@ import time
 
 import search
 import util
+import itertools
 from game import Actions
 from game import Agent
 from game import Directions
@@ -503,10 +504,7 @@ def foodHeuristic(state, problem):
         corners.add(max(foodList, key=lambda pos: sign_x * pos[0] + sign_y * pos[1]))
 
     foodNodes = list(corners)
-    foodEdges = []
-    for i in range(len(foodNodes)):
-        for j in range(i + 1, len(foodNodes)):
-            foodEdges.append((foodNodes[i], foodNodes[j]))
+    foodEdges = list(itertools.combinations(foodNodes, 2))
     foodDistances = map(lambda edge: mazeDistanceCache(edge[0], edge[1], problem), foodEdges)
 
     posEdges = zip([position] * len(foodNodes), foodNodes)
