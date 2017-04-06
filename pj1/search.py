@@ -177,7 +177,6 @@ def aStarSearch(problem, heuristic=nullHeuristic):
     startState = problem.getStartState()
     fringe = util.PriorityQueue()
     fringe.push(State(startState, [], 0), heuristic(startState, problem))
-    heurCache = {}
     while True:
         if fringe.isEmpty():
             return False
@@ -193,11 +192,7 @@ def aStarSearch(problem, heuristic=nullHeuristic):
                     path = list(stateNode.path)
                     path.append(successor[1])
                     cost = successor[2] + stateNode.cost
-                    if state in heurCache:
-                        heur = heurCache[state]
-                    else:
-                        heur = heuristic(state, problem)
-                        heurCache[state] = heur
+                    heur = heuristic(state, problem)
                     fringe.update(State(state, path, cost), cost + heur)
 
 
