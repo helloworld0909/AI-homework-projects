@@ -38,6 +38,7 @@ import time
 
 import search
 import util
+import itertools
 from game import Actions
 from game import Agent
 from game import Directions
@@ -419,6 +420,7 @@ class FoodSearchProblem:
         self.startingGameState = startingGameState
         self._expanded = 0  # DO NOT CHANGE
         self.heuristicInfo = {}  # A dictionary for the heuristic to store information
+        self.heuristicCache = {}
 
     def getStartState(self):
         return self.start
@@ -502,22 +504,27 @@ def foodHeuristic(state, problem):
     for sign_x, sign_y in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
         corners.add(max(foodList, key=lambda pos: sign_x * pos[0] + sign_y * pos[1]))
 
-    nodes = list(corners)
-    nodes.append(position)
+    heurKey = tuple(sorted(corners)), position
+    heur = problem.heuristicCache.get(heurKey, -1)
+    if heur <> -1:
+        return heur
+    else:
+        nodes = list(corners)
+        nodes.append(position)
 
-    import itertools
+        edges = list(itertools.combinations(nodes, 2))
+        graph = dict(zip(edges, map(lambda edge: mazeDistanceCache(edge[0], edge[1], problem), edges)))
 
-    edges = list(itertools.combinations(nodes, 2))
-    # graph = dict(zip(edges, map(lambda edge: mazeDistanceCache(edge[0], edge[1], problem), edges)))
+        minDistance = float('inf')
+        paths = list(itertools.combinations(edges, len(nodes) - 1))
+        for path in paths:
+            if isTraversal(path, nodes):
+                distance = sum(map(lambda edge: graph[edge], path))
+                if distance < minDistance:
+                    minDistance = distance
 
-    minDistance = float('inf')
-    paths = list(itertools.combinations(edges, len(nodes) - 1))
-    for path in paths:
-        if isTraversal(path, nodes):
-            distance = sum(map(lambda edge: mazeDistanceCache(edge[0], edge[1], problem), path))
-            if distance < minDistance:
-                minDistance = distance
-    return minDistance
+        problem.heuristicCache[heurKey] = minDistance
+        return minDistance
 
 
 def mazeDistanceCache(point1, point2, problem):
@@ -530,10 +537,12 @@ def mazeDistanceCache(point1, point2, problem):
         return distance
 
 def isTraversal(path, nodes):
-    visited = set()
-    for edge in path:
-        visited = visited | set(edge)
-    return visited == set(nodes)
+    visited = set([y for x in path for y in x])
+    for node in nodes:
+        if node not in visited:
+            return False
+    return True
+
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
