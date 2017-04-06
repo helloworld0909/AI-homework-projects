@@ -502,20 +502,22 @@ def foodHeuristic(state, problem):
     for sign_x, sign_y in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
         corners.add(max(foodList, key=lambda pos: sign_x * pos[0] + sign_y * pos[1]))
 
-    foodNodes = list(corners)
-    foodEdges = []
-    for i in range(len(foodNodes)):
-        for j in range(i + 1, len(foodNodes)):
-            foodEdges.append((foodNodes[i], foodNodes[j]))
-    foodDistances = map(lambda edge: mazeDistanceCache(edge[0], edge[1], problem), foodEdges)
+    nodes = list(corners)
+    nodes.append(position)
 
-    posEdges = zip([position] * len(foodNodes), foodNodes)
-    posDistances = map(lambda edge: mazeDistanceCache(edge[0], edge[1], problem), posEdges)
+    import itertools
 
-    heur = 0
-    heur += min(posDistances)
-    heur += sum(sorted(foodDistances)[:len(foodNodes) - 1]) # Get top K distances, K=len(foodNodes)-1
-    return heur
+    edges = list(itertools.combinations(nodes, 2))
+    # graph = dict(zip(edges, map(lambda edge: mazeDistanceCache(edge[0], edge[1], problem), edges)))
+
+    minDistance = float('inf')
+    paths = list(itertools.combinations(edges, len(nodes) - 1))
+    for path in paths:
+        if isTraversal(path, nodes):
+            distance = sum(map(lambda edge: mazeDistanceCache(edge[0], edge[1], problem), path))
+            if distance < minDistance:
+                minDistance = distance
+    return minDistance
 
 
 def mazeDistanceCache(point1, point2, problem):
@@ -527,6 +529,11 @@ def mazeDistanceCache(point1, point2, problem):
         problem.heuristicInfo[edge] = distance
         return distance
 
+def isTraversal(path, nodes):
+    visited = set()
+    for edge in path:
+        visited = visited | set(edge)
+    return visited == set(nodes)
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
