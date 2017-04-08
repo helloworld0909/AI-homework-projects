@@ -19,13 +19,13 @@ def create_nqueens_csp(n = 8):
     """
     csp = util.CSP()
     # Problem 1a
-    # BEGIN_YOUR_CODE (our solution is 7 lines of code, but don't worry if you deviate from this)
+
     for x in range(n):
         csp.add_variable('q' + str(x), range(n))
     for i, j in itertools.combinations(range(n), 2):
-        csp.add_binary_factor('q' + str(i), 'q' + str(j), lambda val_i, val_j: val_i <> val_j and abs(val_i - val_j) <> abs(i - j))
+        csp.add_binary_factor('q' + str(i), 'q' + str(j),
+                              lambda val_i, val_j: val_i <> val_j and abs(val_i - val_j) <> abs(i - j))
 
-    # END_YOUR_CODE
     return csp
 
 # A backtracking algorithm that solves weighted CSP.
@@ -223,9 +223,14 @@ class BacktrackingSearch():
             # Hint: get_delta_weight gives the change in weights given a partial
             #       assignment, a variable, and a proposed value to this variable
             # Hint: for ties, choose the variable with lowest index in self.csp.variables
-            # BEGIN_YOUR_CODE (our solution is 7 lines of code, but don't worry if you deviate from this)
-            raise Exception("Not implemented yet")
-            # END_YOUR_CODE
+
+            MCV, minNumValues = None, float('inf')
+            for var in [var for var in self.csp.variables if var not in assignment]:
+                deltaWeightList = map(lambda val: self.get_delta_weight(assignment, var, val), self.domains[var])
+                numValues = len(filter(lambda weight: weight > 0.0, deltaWeightList))
+                if numValues < minNumValues:
+                    MCV, minNumValues = var, numValues
+            return MCV
 
     def arc_consistency_check(self, var):
         """
