@@ -1,4 +1,7 @@
-import collections, util, copy
+import itertools
+
+import copy
+import util
 
 
 ############################################################
@@ -17,7 +20,11 @@ def create_nqueens_csp(n = 8):
     csp = util.CSP()
     # Problem 1a
     # BEGIN_YOUR_CODE (our solution is 7 lines of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    for x in range(n):
+        csp.add_variable('q' + str(x), range(n))
+    for i, j in itertools.combinations(range(n), 2):
+        csp.add_binary_factor('q' + str(i), 'q' + str(j), lambda val_i, val_j: val_i <> val_j and abs(val_i - val_j) <> abs(i - j))
+
     # END_YOUR_CODE
     return csp
 

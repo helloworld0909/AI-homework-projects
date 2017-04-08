@@ -4,12 +4,8 @@ Grader for template assignment
 Optionally run as grader.py [basic|all] to run a subset of tests
 """
 
-import random
-
 import graderUtil
-import util
-import collections
-import copy
+
 grader = graderUtil.Grader()
 submission = grader.load('submission')
 
