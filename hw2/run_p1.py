@@ -1,4 +1,5 @@
-import util, submission
+import submission
+import util
 
 print 'Map coloring example:'
 csp = util.create_map_coloring_csp()

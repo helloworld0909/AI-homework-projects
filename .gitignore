@@ -93,8 +93,6 @@ ENV/
 # Created by .ignore support plugin (hsz.mobi)
 
 # User customs
-*.docx
 *.pdf
 *.zip
-OJ*
-.idea/*
+*.out
