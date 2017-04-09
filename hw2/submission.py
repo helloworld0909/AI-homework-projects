@@ -253,5 +253,19 @@ class BacktrackingSearch():
         #   (self.csp.binaryFactors[var1][var2] returns a nested dict of all assignments)
 
         # BEGIN_YOUR_CODE (our solution is 20 lines of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
-        # END_YOUR_CODE
+
+        def revise(var_i, var_j):
+            revised = False
+            for val_i in list(self.domains[var_i]):
+                weight_sum = sum([self.csp.binaryFactors[var_i][var_j][val_i][val_j] for val_j in self.domains[var_j]])
+                if not weight_sum:
+                    self.domains[var_i].remove(val_i)
+                    revised = True
+            return revised
+
+        queue = [var]
+        while len(queue) > 0:
+            currentVar = queue.pop(0)
+            for neighborVar in self.csp.get_neighbor_vars(currentVar):
+                if revise(neighborVar, currentVar):
+                    queue.append(neighborVar)
