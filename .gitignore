@@ -96,3 +96,6 @@ ENV/
 *.pdf
 *.zip
 *.out
+*.docx
+*.tmp
+/*/.idea
