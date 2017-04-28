@@ -187,11 +187,11 @@ def identityFeatureExtractor(state, action):
 ############################################################
 # Problem 4b: convergence of Q-learning
 # Small test case
-# smallMDP = BlackjackMDP(cardValues=[1, 5], multiplicity=2, threshold=10, peekCost=1)
-#
-# # Large test case
-# largeMDP = BlackjackMDP(cardValues=[1, 3, 5, 8, 10], multiplicity=3, threshold=40, peekCost=1)
-# largeMDP.computeStates()
+smallMDP = BlackjackMDP(cardValues=[1, 5], multiplicity=2, threshold=10, peekCost=1)
+
+# Large test case
+largeMDP = BlackjackMDP(cardValues=[1, 3, 5, 8, 10], multiplicity=3, threshold=40, peekCost=1)
+largeMDP.computeStates()
 
 
 
@@ -217,8 +217,8 @@ def blackjackFeatureExtractor(state, action):
 # Problem 4d: What happens when the MDP changes underneath you?!
 
 # Original mdp
-# originalMDP = BlackjackMDP(cardValues=[1, 5], multiplicity=2, threshold=10, peekCost=1)
-#
-# # New threshold
-# newThresholdMDP = BlackjackMDP(cardValues=[1, 5], multiplicity=2, threshold=15, peekCost=1)
+originalMDP = BlackjackMDP(cardValues=[1, 5], multiplicity=2, threshold=10, peekCost=1)
+
+# New threshold
+newThresholdMDP = BlackjackMDP(cardValues=[1, 5], multiplicity=2, threshold=15, peekCost=1)
 
