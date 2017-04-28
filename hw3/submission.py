@@ -90,6 +90,19 @@ class BlackjackMDP(util.MDP):
             return [((valueInHand, None, None), 1.0, 0)]
         elif action == 'Take':
             reward = 0
+
+            # Peeked in the last turn
+            if nextCard is not None:
+                newDeckCount = list(deckCount)
+                newDeckCount[nextCard] -= 1
+                if not reduce(lambda a, b: a or b, newDeckCount):  # All elements in newDeckCount are zero
+                    newDeckCount = None
+                    reward = valueInHand + self.cardValues[nextCard]
+                else:
+                    newDeckCount = tuple(newDeckCount)
+                return [((valueInHand + self.cardValues[nextCard], None, newDeckCount), 1.0, reward)]
+
+
             for index, count in deckIndexCount:
                 newValue = valueInHand + self.cardValues[index]
                 if newValue > self.threshold:
@@ -124,8 +137,7 @@ def peekingMDP():
     least 10% of the time.
     """
     # BEGIN_YOUR_CODE (our solution is 2 lines of code, but don't worry if you deviate from this)
-    # raise Exception("Not implemented yet")
-    pass
+    return BlackjackMDP(cardValues=[17, 18], multiplicity=1, threshold=20, peekCost=1)
     # END_YOUR_CODE
 
 ############################################################
@@ -173,7 +185,6 @@ class QLearningAlgorithm(util.RLAlgorithm):
     # self.getQ() to compute the current estimate of the parameters.
     def incorporateFeedback(self, state, action, reward, newState):
         # BEGIN_YOUR_CODE (our solution is 12 lines of code, but don't worry if you deviate from this)
-        # raise Exception("Not implemented yet")
         pass
         # END_YOUR_CODE
 
