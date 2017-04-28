@@ -73,7 +73,40 @@ class BlackjackMDP(util.MDP):
     # in the list returned by succAndProbReward.
     def succAndProbReward(self, state, action):
         # BEGIN_YOUR_CODE (our solution is 53 lines of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        valueInHand, nextCard, deckCount = state
+        if not deckCount:
+            return []
+        deckIndexCount = zip(range(len(deckCount)), deckCount)
+        deckIndexCount = filter(lambda x: x[1] != 0, deckIndexCount)
+        if not deckIndexCount:
+            return []
+
+        succ = []
+        prob = 1.0 / len(deckIndexCount)
+        if action == 'Quit':
+            return [((valueInHand, None, None), 1.0, 0)]
+        elif action == 'Take':
+            reward = 0
+            for index, count in deckIndexCount:
+                newValue = valueInHand + self.cardValues[index]
+                if newValue > self.threshold:
+                    succ.append(((newValue, None, None), prob, reward))
+                else:
+                    newDeckCount = list(deckCount)
+                    newDeckCount[index] -= 1
+                    if not reduce(lambda a,b: a or b, newDeckCount):    # All elements in newDeckCount are zero
+                        newDeckCount = None
+                        reward = newValue
+                    else:
+                        newDeckCount = tuple(newDeckCount)
+                    succ.append(((newValue, None, newDeckCount), prob, reward))
+        elif action == 'Peek':
+            for index, count in deckIndexCount:
+                succ.append(((valueInHand, index, deckCount), prob, -self.peekCost))
+        else:
+            raise Exception('succ Error')
+        return succ
+
         # END_YOUR_CODE
 
     def discount(self):
@@ -88,7 +121,8 @@ def peekingMDP():
     least 10% of the time.
     """
     # BEGIN_YOUR_CODE (our solution is 2 lines of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    # raise Exception("Not implemented yet")
+    pass
     # END_YOUR_CODE
 
 ############################################################
@@ -136,7 +170,8 @@ class QLearningAlgorithm(util.RLAlgorithm):
     # self.getQ() to compute the current estimate of the parameters.
     def incorporateFeedback(self, state, action, reward, newState):
         # BEGIN_YOUR_CODE (our solution is 12 lines of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        # raise Exception("Not implemented yet")
+        pass
         # END_YOUR_CODE
 
 # Return a singleton list containing indicator feature for the (state, action)
@@ -149,11 +184,11 @@ def identityFeatureExtractor(state, action):
 ############################################################
 # Problem 4b: convergence of Q-learning
 # Small test case
-smallMDP = BlackjackMDP(cardValues=[1, 5], multiplicity=2, threshold=10, peekCost=1)
-
-# Large test case
-largeMDP = BlackjackMDP(cardValues=[1, 3, 5, 8, 10], multiplicity=3, threshold=40, peekCost=1)
-largeMDP.computeStates()
+# smallMDP = BlackjackMDP(cardValues=[1, 5], multiplicity=2, threshold=10, peekCost=1)
+#
+# # Large test case
+# largeMDP = BlackjackMDP(cardValues=[1, 3, 5, 8, 10], multiplicity=3, threshold=40, peekCost=1)
+# largeMDP.computeStates()
 
 
 
@@ -171,15 +206,16 @@ largeMDP.computeStates()
 def blackjackFeatureExtractor(state, action):
     total, nextCard, counts = state
     # BEGIN_YOUR_CODE (our solution is 9 lines of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    # raise Exception("Not implemented yet")
+    pass
     # END_YOUR_CODE
 
 ############################################################
 # Problem 4d: What happens when the MDP changes underneath you?!
 
 # Original mdp
-originalMDP = BlackjackMDP(cardValues=[1, 5], multiplicity=2, threshold=10, peekCost=1)
-
-# New threshold
-newThresholdMDP = BlackjackMDP(cardValues=[1, 5], multiplicity=2, threshold=15, peekCost=1)
+# originalMDP = BlackjackMDP(cardValues=[1, 5], multiplicity=2, threshold=10, peekCost=1)
+#
+# # New threshold
+# newThresholdMDP = BlackjackMDP(cardValues=[1, 5], multiplicity=2, threshold=15, peekCost=1)
 
