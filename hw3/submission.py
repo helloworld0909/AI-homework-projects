@@ -74,6 +74,9 @@ class BlackjackMDP(util.MDP):
     def succAndProbReward(self, state, action):
         # BEGIN_YOUR_CODE (our solution is 53 lines of code, but don't worry if you deviate from this)
         valueInHand, nextCard, deckCount = state
+
+        if valueInHand > self.threshold:
+            return []
         if not deckCount:
             return []
         deckIndexCount = zip(range(len(deckCount)), deckCount)
@@ -82,7 +85,7 @@ class BlackjackMDP(util.MDP):
             return []
 
         succ = []
-        prob = 1.0 / len(deckIndexCount)
+        deckProb = map(lambda c: float(c) / sum(deckCount), deckCount)
         if action == 'Quit':
             return [((valueInHand, None, None), 1.0, 0)]
         elif action == 'Take':
@@ -90,7 +93,7 @@ class BlackjackMDP(util.MDP):
             for index, count in deckIndexCount:
                 newValue = valueInHand + self.cardValues[index]
                 if newValue > self.threshold:
-                    succ.append(((newValue, None, None), prob, reward))
+                    succ.append(((newValue, None, None), deckProb[index], reward))
                 else:
                     newDeckCount = list(deckCount)
                     newDeckCount[index] -= 1
@@ -99,10 +102,10 @@ class BlackjackMDP(util.MDP):
                         reward = newValue
                     else:
                         newDeckCount = tuple(newDeckCount)
-                    succ.append(((newValue, None, newDeckCount), prob, reward))
+                    succ.append(((newValue, None, newDeckCount), deckProb[index], reward))
         elif action == 'Peek':
             for index, count in deckIndexCount:
-                succ.append(((valueInHand, index, deckCount), prob, -self.peekCost))
+                succ.append(((valueInHand, index, deckCount), deckProb[index], -self.peekCost))
         else:
             raise Exception('succ Error')
         return succ
