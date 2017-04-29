@@ -86,22 +86,27 @@ class BlackjackMDP(util.MDP):
 
         succ = []
         deckProb = map(lambda c: float(c) / sum(deckCount), deckCount)
+
         if action == 'Quit':
-            return [((valueInHand, None, None), 1.0, 0)]
+            return [((valueInHand, None, None), 1.0, valueInHand)]
+
         elif action == 'Take':
             reward = 0
-
             # Peeked in the last turn
             if nextCard is not None:
                 newDeckCount = list(deckCount)
                 newDeckCount[nextCard] -= 1
-                if not reduce(lambda a, b: a or b, newDeckCount):  # All elements in newDeckCount are zero
+                newValue = valueInHand + self.cardValues[nextCard]
+                if newValue > self.threshold:
                     newDeckCount = None
-                    reward = valueInHand + self.cardValues[nextCard]
+                    reward = 0
                 else:
-                    newDeckCount = tuple(newDeckCount)
-                return [((valueInHand + self.cardValues[nextCard], None, newDeckCount), 1.0, reward)]
-
+                    if not reduce(lambda a, b: a or b, newDeckCount):  # All elements in newDeckCount are zero
+                        newDeckCount = None
+                        reward = valueInHand + self.cardValues[nextCard]
+                    else:
+                        newDeckCount = tuple(newDeckCount)
+                return [((newValue, None, newDeckCount), 1.0, reward)]
 
             for index, count in deckIndexCount:
                 newValue = valueInHand + self.cardValues[index]
@@ -116,7 +121,10 @@ class BlackjackMDP(util.MDP):
                     else:
                         newDeckCount = tuple(newDeckCount)
                     succ.append(((newValue, None, newDeckCount), deckProb[index], reward))
+
         elif action == 'Peek':
+            if nextCard is not None:
+                return []
             for index, count in deckIndexCount:
                 succ.append(((valueInHand, index, deckCount), deckProb[index], -self.peekCost))
         else:
@@ -137,7 +145,7 @@ def peekingMDP():
     least 10% of the time.
     """
     # BEGIN_YOUR_CODE (our solution is 2 lines of code, but don't worry if you deviate from this)
-    return BlackjackMDP(cardValues=[17, 18], multiplicity=1, threshold=20, peekCost=1)
+    return BlackjackMDP(cardValues=[16, 5, 6], multiplicity=2, threshold=20, peekCost=1)
     # END_YOUR_CODE
 
 ############################################################
@@ -186,9 +194,11 @@ class QLearningAlgorithm(util.RLAlgorithm):
     def incorporateFeedback(self, state, action, reward, newState):
         # BEGIN_YOUR_CODE (our solution is 12 lines of code, but don't worry if you deviate from this)
         if newState is None:
-            return
+            Vopt = 0
+        else:
+            Vopt = max(self.getQ(newState, actionPrime) for actionPrime in self.actions(newState))
         stepSize = self.getStepSize()
-        difference = reward + self.discount * max((self.getQ(newState, actionPrime) for actionPrime in self.actions(newState))) - self.getQ(state, action)
+        difference = reward + self.discount * Vopt - self.getQ(state, action)
         for f, v in self.featureExtractor(state, action):
             self.weights[f] += stepSize * difference * v
 
@@ -205,6 +215,14 @@ def identityFeatureExtractor(state, action):
 # Problem 4b: convergence of Q-learning
 # Small test case
 smallMDP = BlackjackMDP(cardValues=[1, 5], multiplicity=2, threshold=10, peekCost=1)
+
+rl = QLearningAlgorithm(smallMDP.actions, smallMDP.discount(), identityFeatureExtractor)
+util.simulate(smallMDP, rl, numTrials=30000)
+
+# policy from Q-learning
+print '\nPolicy from smallMDP:'
+rl.explorationProb = 0.0
+util.simulate(smallMDP, rl, numTrials=5, maxIterations=10, verbose=True, sort=True)
 
 # Large test case
 largeMDP = BlackjackMDP(cardValues=[1, 3, 5, 8, 10], multiplicity=3, threshold=40, peekCost=1)
