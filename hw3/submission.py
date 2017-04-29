@@ -185,7 +185,13 @@ class QLearningAlgorithm(util.RLAlgorithm):
     # self.getQ() to compute the current estimate of the parameters.
     def incorporateFeedback(self, state, action, reward, newState):
         # BEGIN_YOUR_CODE (our solution is 12 lines of code, but don't worry if you deviate from this)
-        pass
+        if newState is None:
+            return
+        stepSize = self.getStepSize()
+        difference = reward + self.discount * max((self.getQ(newState, actionPrime) for actionPrime in self.actions(newState))) - self.getQ(state, action)
+        for f, v in self.featureExtractor(state, action):
+            self.weights[f] += stepSize * difference * v
+
         # END_YOUR_CODE
 
 # Return a singleton list containing indicator feature for the (state, action)
