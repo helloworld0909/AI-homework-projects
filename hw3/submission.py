@@ -314,6 +314,7 @@ def problem_4d():
     print 'VI reward: {}'.format(sum(VIReward)*1.0/len(VIReward))
     print 'QL reward: {}'.format(sum(QLReward)*1.0/len(QLReward))
 
+
 if __name__ == '__main__':
     problem_4d()
     problem_4c()
