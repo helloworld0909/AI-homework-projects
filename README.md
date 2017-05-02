@@ -1,5 +1,8 @@
 # AI-homework
 
+#### 参考我的作业的同学麻烦点个star!
+#### If you find it helpful, please give me a star!
+
 Textbook:
 * Artificial Intelligence: A Modern Approach
 
