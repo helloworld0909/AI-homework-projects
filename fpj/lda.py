@@ -2,6 +2,10 @@ import numpy as np
 import logging
 from corpus import Corpus
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="[%(asctime)s] %(levelname)s: %(message)s"
+)
 
 class LDA(object):
 
@@ -11,11 +15,11 @@ class LDA(object):
         self.beta = beta
         self.n_iter = n_iter
 
-        self.logger = logging.getLogger('LDA')
-
         assert alpha > 0 and beta > 0, 'Alpha and beta should be larger than zero'
         assert isinstance(n_topic, int), 'n_topic should be an integer'
 
+
+        self.logger = logging.getLogger('LDA')
 
     def fit(self, corpus, algorithm='GS'):
         """
@@ -32,7 +36,7 @@ class LDA(object):
         assert isinstance(corpus, Corpus), 'Input should be Corpus type'
 
         if algorithm == 'GS':
-            self._fit_Gibbs(corpus)
+            self._fit_GS(corpus)
         elif algorithm == 'VI':
             self._fit_inference(corpus)
         else:
@@ -41,11 +45,95 @@ class LDA(object):
 
 
 
-    def _fit_Gibbs(self, corpus):
-        pass
+    def _fit_GS(self, corpus):
+        self._initialize(corpus)
+        for it in range(self.n_iter):
+            update_k_count = 0
+
+            for m, doc in enumerate(corpus.docs):
+                for n, word in enumerate(doc):
+                    old_k = self.z_mn[m][n]
+                    self.n_mk[m][old_k] -= 1
+                    self.n_kt[old_k][word] -= 1
+                    self.n_m[m] -= 1
+                    self.n_k[old_k] -= 1
+
+                    new_k = self._sample_topic(m, n, word)
+
+                    self.n_mk[m][new_k] += 1
+                    self.n_kt[new_k][word] += 1
+                    self.n_m[m] += 1
+                    self.n_k[new_k] += 1
+
+                    self.z_mn[m][n] = new_k
+
+                    if new_k != old_k:
+                        update_k_count += 1
+
+            self._read_out_parameters()
+            self.logger.info('<iter{}> update rate: {}'.format(it, float(update_k_count) / self.N_sum))
+
 
     def _initialize(self, corpus):
-        pass
+        self.V = corpus.V
+        self.M = corpus.M
+        self.N_sum = 0
+        self.n_mk = np.zeros((self.M, self.K), dtype='intc')
+        self.n_m = np.zeros(self.M, dtype='intc')
+        self.n_kt = np.zeros((self.K, self.V), dtype='intc')
+        self.n_k = np.zeros(self.K, dtype='intc')
+
+        self.phi = np.empty((self.K, self.V), dtype='float64')
+        self.theta = np.empty((self.M, self.V), dtype='float64')
+
+        self.z_mn = []
+        for m, doc in enumerate(corpus.docs):
+            self.N_sum += len(doc)
+            z_m = np.empty(len(doc), dtype='intc')
+            for n, word in enumerate(doc):
+                init_k = int(np.random.random(1) * self.K)
+                z_m[n] = init_k
+                self.n_mk[m][init_k] += 1
+                self.n_kt[init_k][word] += 1
+                self.n_m[m] += 1
+                self.n_k[init_k] += 1
+            self.z_mn.append(z_m)
+
+
+    def _sample_topic(self, m, n, word):
+
+        prob_k = np.empty(self.K, dtype='float64')
+        for k in range(self.K):
+            prob_k[k] = self._full_conditional(m, n, k, word)
+        prob_k /= prob_k.sum()
+
+        new_k = np.random.choice(self.K, 1, p=prob_k)[0]
+        return new_k
+
+    def _full_conditional(self, m, n, k, word):
+        """
+        Compute p(z_i = k|z_-i, w)
+        :param m: m-th document
+        :param n: n-th word in the document
+        :param k: k-th topic
+        :param word: The id of the word
+        :return: p(z_i = k|z_-i, w)
+        """
+        return (self.n_kt[k][word] + self.beta) / (self.n_k[k] + self.V * self.beta) * (self.n_mk[m][k] + self.alpha)
+
+
+    def _read_out_parameters(self):
+        for k in range(self.K):
+            for t in range(self.V):
+                self.phi[k][t] = (self.n_kt[k][t] + self.beta) / (self.n_k[k] + self.V * self.beta)
+
+        for m in range(self.M):
+            for k in range(self.K):
+                self.theta[m][k] = (self.n_mk[m][k] + self.alpha) / (self.n_m[m] + self.K * self.alpha)
 
     def _fit_inference(self, corpus):
         pass
+
+
+
+
