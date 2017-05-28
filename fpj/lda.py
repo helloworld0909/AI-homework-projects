@@ -1,5 +1,7 @@
+import os
 import numpy as np
 import logging
+import pickle
 from corpus import Corpus
 
 logging.basicConfig(
@@ -9,7 +11,7 @@ logging.basicConfig(
 
 class LDA(object):
 
-    def __init__(self, n_topic, alpha=0.1, beta=0.1, n_iter=1000):
+    def __init__(self, n_topic=10, alpha=0.1, beta=0.1, n_iter=1000):
         self.K = n_topic
         self.alpha = alpha
         self.beta = beta
@@ -58,7 +60,7 @@ class LDA(object):
                     self.n_m[m] -= 1
                     self.n_k[old_k] -= 1
 
-                    new_k = self._sample_topic(m, n, word)
+                    new_k = self._sample_topic(m, word)
 
                     self.n_mk[m][new_k] += 1
                     self.n_kt[new_k][word] += 1
@@ -100,17 +102,17 @@ class LDA(object):
             self.z_mn.append(z_m)
 
 
-    def _sample_topic(self, m, n, word):
+    def _sample_topic(self, m, word):
 
         prob_k = np.empty(self.K, dtype='float64')
         for k in range(self.K):
-            prob_k[k] = self._full_conditional(m, n, k, word)
+            prob_k[k] = self._full_conditional(m, k, word)
         prob_k /= prob_k.sum()
 
         new_k = np.random.choice(self.K, 1, p=prob_k)[0]
         return new_k
 
-    def _full_conditional(self, m, n, k, word):
+    def _full_conditional(self, m, k, word):
         """
         Compute p(z_i = k|z_-i, w)
         :param m: m-th document
@@ -135,5 +137,32 @@ class LDA(object):
         pass
 
 
+    def save_model(self, filepath='model/', protocol=0):
+        if not os.path.exists(filepath):
+            os.mkdir(filepath)
+        with open(filepath + 'model.pkl', 'wb') as output_file:
+            pickle.dump(self.K, output_file, protocol)
+            pickle.dump(self.alpha, output_file, protocol)
+            pickle.dump(self.beta, output_file, protocol)
+            pickle.dump(self.n_iter, output_file, protocol)
+            pickle.dump(self.V, output_file, protocol)
+            pickle.dump(self.M, output_file, protocol)
+            pickle.dump(self.N_sum, output_file, protocol)
+            pickle.dump(self.z_mn, output_file, protocol)
+            pickle.dump(self.phi, output_file, protocol)
+            pickle.dump(self.theta, output_file, protocol)
+
+    def load_model(self, filepath='model/'):
+        with open(filepath + 'model.pkl', 'rb') as input_file:
+            self.K = pickle.load(input_file)
+            self.alpha = pickle.load(input_file)
+            self.beta = pickle.load(input_file)
+            self.n_iter = pickle.load(input_file)
+            self.V = pickle.load(input_file)
+            self.M = pickle.load(input_file)
+            self.N_sum = pickle.load(input_file)
+            self.z_mn = pickle.load(input_file)
+            self.phi = pickle.load(input_file)
+            self.theta = pickle.load(input_file)
 
 
