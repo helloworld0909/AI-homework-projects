@@ -7,15 +7,16 @@ class Corpus(object):
     def __init__(self):
         self.id2word = {}
         self.word2id = {}
+        self.context = {}
         self.docs = []
         self.V = 0
         self.M = 0
 
     def load_text(self, filepath):
         """        
-        :param filepath: 
-        Each line is a document which contains many words, and words are separated by whitespace
-        
+        :param filepath: The path of the input file
+        Each line is a document which contains many words, and words are separated by whitespace.
+        This method can load data and build vocabulary at the same time.
         """
 
         input_file = open(filepath, 'r')
@@ -57,10 +58,25 @@ class Corpus(object):
 
         input_file.close()
 
+    def load_vocabulary(self, filepath):
+
+        with open(filepath, 'r') as input_file:
+            for index, line in enumerate(input_file):
+                word = line.strip()
+                self.word2id[word] = index
+                self.id2word[index] = word
+
+    def load_context(self, filepath):
+
+        with open(filepath, 'r') as input_file:
+            for index, line in enumerate(input_file):
+                self.context[index] = line.strip()
+
 
 if __name__ == '__main__':
     corpus = Corpus()
     corpus.load_ldac('input/reuters.ldac')
-    print corpus.V
+    corpus.load_vocabulary('input/reuters.tokens')
+    print corpus.word2id
 
 

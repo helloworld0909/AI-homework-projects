@@ -1,7 +1,9 @@
-import os
-import numpy as np
 import logging
+import os
 import pickle
+
+import numpy as np
+
 from corpus import Corpus
 
 logging.basicConfig(
@@ -9,8 +11,8 @@ logging.basicConfig(
     format="[%(asctime)s] %(levelname)s: %(message)s"
 )
 
-class LDA(object):
 
+class LDA(object):
     def __init__(self, n_topic=10, alpha=0.1, beta=0.1, n_iter=1000):
         self.K = n_topic
         self.alpha = alpha
@@ -19,7 +21,6 @@ class LDA(object):
 
         assert alpha > 0 and beta > 0, 'Alpha and beta should be larger than zero'
         assert isinstance(n_topic, int), 'n_topic should be an integer'
-
 
         self.logger = logging.getLogger('LDA')
 
@@ -44,8 +45,6 @@ class LDA(object):
         else:
             raise ValueError("algorithm must be either 'GS' or 'VI'")
         return self
-
-
 
     def _fit_GS(self, corpus):
         self._initialize(corpus)
@@ -75,7 +74,6 @@ class LDA(object):
             self._read_out_parameters()
             self.logger.info('<iter{}> update rate: {}'.format(it, float(update_k_count) / self.N_sum))
 
-
     def _initialize(self, corpus):
         self.V = corpus.V
         self.M = corpus.M
@@ -101,7 +99,6 @@ class LDA(object):
                 self.n_k[init_k] += 1
             self.z_mn.append(z_m)
 
-
     def _sample_topic(self, m, word):
 
         prob_k = np.empty(self.K, dtype='float64')
@@ -116,13 +113,11 @@ class LDA(object):
         """
         Compute p(z_i = k|z_-i, w)
         :param m: m-th document
-        :param n: n-th word in the document
         :param k: k-th topic
         :param word: The id of the word
         :return: p(z_i = k|z_-i, w)
         """
         return (self.n_kt[k][word] + self.beta) / (self.n_k[k] + self.V * self.beta) * (self.n_mk[m][k] + self.alpha)
-
 
     def _read_out_parameters(self):
         for k in range(self.K):
@@ -136,6 +131,34 @@ class LDA(object):
     def _fit_inference(self, corpus):
         pass
 
+    def topic_word(self, n_top_word=10, corpus=None):
+        if not hasattr(self, 'phi'):
+            raise Exception('You should fit model first')
+        else:
+            topic_word_list = []
+            for k in range(self.K):
+                word_list = []
+                for index in self.phi[k].argsort()[-n_top_word:]:
+                    if corpus is not None:
+                        word_list.append(corpus.id2word[index])
+                    else:
+                        word_list.append(index)
+                topic_word_list.append(word_list)
+            return topic_word_list
+
+    def document_topic(self, n_top_topic=1, corpus=None, limit=10):
+        if not hasattr(self, 'theta'):
+            raise Exception('You should fit model first')
+        else:
+            document_topic_list = []
+            for m in range(min(limit, self.M)):
+                topic_list = []
+                for index in self.theta[m].argsort()[-n_top_topic:]:
+                    topic_list.append(index)
+
+                if corpus is not None:
+                    document_topic_list.append((corpus.context[m], tuple(topic_list)))
+            return document_topic_list
 
     def save_model(self, filepath='model/', protocol=0):
         if not os.path.exists(filepath):
@@ -164,5 +187,3 @@ class LDA(object):
             self.z_mn = pickle.load(input_file)
             self.phi = pickle.load(input_file)
             self.theta = pickle.load(input_file)
-
-
