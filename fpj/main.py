@@ -7,7 +7,7 @@ def fit_reuters():
     corpus = Corpus()
     corpus.load_ldac(menu_path + 'reuters.ldac')
     model = LDA(n_topic=20)
-    model.fit(corpus, n_iter=1000)
+    model.fit(corpus, n_iter=50)
 
     model.save_model(protocol=2)
 
@@ -21,10 +21,10 @@ def output_reuters():
     corpus.load_context(menu_path + 'reuters.titles')
 
     topic_word = model.topic_word(n_top_word=10, corpus=corpus)
-    print topic_word
+    print '\n'.join(map(str, topic_word))
 
     document_topic = model.document_topic(n_top_topic=1, corpus=corpus, limit=10)
-    print document_topic
+    print '\n'.join(map(str, document_topic))
 
 def main():
     corpus = Corpus()
@@ -36,5 +36,5 @@ def main():
     print perplexity
 
 if __name__ == '__main__':
-    main()
+    output_reuters()
 
