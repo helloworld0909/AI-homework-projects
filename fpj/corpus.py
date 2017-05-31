@@ -77,6 +77,5 @@ if __name__ == '__main__':
     corpus = Corpus()
     corpus.load_ldac('input/reuters.ldac')
     corpus.load_vocabulary('input/reuters.tokens')
-    print corpus.word2id
 
 

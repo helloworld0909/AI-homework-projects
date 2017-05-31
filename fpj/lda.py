@@ -13,45 +13,57 @@ logging.basicConfig(
 
 
 class LDA(object):
-    def __init__(self, n_topic=10, alpha=0.1, beta=0.1, n_iter=1000):
+    def __init__(self, n_topic=10, alpha=0.1, beta=0.1):
+        self.V = 0
         self.K = n_topic
         self.alpha = alpha
         self.beta = beta
-        self.n_iter = n_iter
+        self.valid_split = 0.0
 
         assert alpha > 0 and beta > 0, 'Alpha and beta should be larger than zero'
         assert isinstance(n_topic, int), 'n_topic should be an integer'
 
         self.logger = logging.getLogger('LDA')
 
-    def fit(self, corpus, algorithm='GS'):
+    def fit(self, corpus, valid_split=0.0, algorithm='GS', n_iter=1000, verbose=True):
         """
         
         :param corpus: 
         corpus.Corpus()
         
+        :param valid_split:
+        
+        :param n_iter:
+        
         :param algorithm: 
         'GS'    ->  Gibbs sampling
         'VI'    ->  Variational Inference
+        
+        :param verbose:
+        True: print log information
         
         :return: LDA
         """
         assert isinstance(corpus, Corpus), 'Input should be Corpus type'
 
+        self.valid_split = valid_split
+        V = self.V = corpus.V
+        M = int(corpus.M * (1 - valid_split))
         if algorithm == 'GS':
-            self._fit_GS(corpus)
+            self._fit_GS(corpus.docs[: M], V, n_iter, verbose)
         elif algorithm == 'VI':
-            self._fit_inference(corpus)
+            pass
         else:
             raise ValueError("algorithm must be either 'GS' or 'VI'")
         return self
 
-    def _fit_GS(self, corpus):
-        self._initialize(corpus)
-        for it in range(self.n_iter):
+    def _fit_GS(self, docs, V, n_iter, verbose=True):
+        M = len(docs)
+        self._initialize(docs, V, M)
+        for it in range(n_iter):
             update_k_count = 0
 
-            for m, doc in enumerate(corpus.docs):
+            for m, doc in enumerate(docs):
                 for n, word in enumerate(doc):
                     old_k = self.z_mn[m][n]
                     self.n_mk[m][old_k] -= 1
@@ -71,23 +83,23 @@ class LDA(object):
                     if new_k != old_k:
                         update_k_count += 1
 
-            self._read_out_parameters()
-            self.logger.info('<iter{}> update rate: {}'.format(it, float(update_k_count) / self.N_sum))
 
-    def _initialize(self, corpus):
-        self.V = corpus.V
-        self.M = corpus.M
+            if verbose:
+                self.logger.info('<iter{}> update rate: {}'.format(it, float(update_k_count) / self.N_sum))
+        self._read_out_parameters()
+
+    def _initialize(self, docs, V, M):
         self.N_sum = 0
-        self.n_mk = np.zeros((self.M, self.K), dtype='intc')
-        self.n_m = np.zeros(self.M, dtype='intc')
-        self.n_kt = np.zeros((self.K, self.V), dtype='intc')
+        self.n_mk = np.zeros((M, self.K), dtype='intc')
+        self.n_m = np.zeros(M, dtype='intc')
+        self.n_kt = np.zeros((self.K, V), dtype='intc')
         self.n_k = np.zeros(self.K, dtype='intc')
 
-        self.phi = np.empty((self.K, self.V), dtype='float64')
-        self.theta = np.empty((self.M, self.V), dtype='float64')
+        self.phi = np.empty((self.K, V), dtype='float64')
+        self.theta = np.empty((M, self.K), dtype='float64')
 
         self.z_mn = []
-        for m, doc in enumerate(corpus.docs):
+        for m, doc in enumerate(docs):
             self.N_sum += len(doc)
             z_m = np.empty(len(doc), dtype='intc')
             for n, word in enumerate(doc):
@@ -124,11 +136,11 @@ class LDA(object):
             for t in range(self.V):
                 self.phi[k][t] = (self.n_kt[k][t] + self.beta) / (self.n_k[k] + self.V * self.beta)
 
-        for m in range(self.M):
+        for m in range(self.n_m.size):
             for k in range(self.K):
                 self.theta[m][k] = (self.n_mk[m][k] + self.alpha) / (self.n_m[m] + self.K * self.alpha)
 
-    def _fit_inference(self, corpus):
+    def _fit_inference(self, corpus, valid_split, n_iter):
         pass
 
     def topic_word(self, n_top_word=10, corpus=None):
@@ -150,8 +162,9 @@ class LDA(object):
         if not hasattr(self, 'theta'):
             raise Exception('You should fit model first')
         else:
+            M = self.theta[:,0].size
             document_topic_list = []
-            for m in range(min(limit, self.M)):
+            for m in range(min(limit, M)):
                 topic_list = []
                 for index in self.theta[m].argsort()[-n_top_topic:]:
                     topic_list.append(index)
@@ -167,9 +180,8 @@ class LDA(object):
             pickle.dump(self.K, output_file, protocol)
             pickle.dump(self.alpha, output_file, protocol)
             pickle.dump(self.beta, output_file, protocol)
-            pickle.dump(self.n_iter, output_file, protocol)
+            pickle.dump(self.valid_split, output_file, protocol)
             pickle.dump(self.V, output_file, protocol)
-            pickle.dump(self.M, output_file, protocol)
             pickle.dump(self.N_sum, output_file, protocol)
             pickle.dump(self.z_mn, output_file, protocol)
             pickle.dump(self.phi, output_file, protocol)
@@ -180,10 +192,39 @@ class LDA(object):
             self.K = pickle.load(input_file)
             self.alpha = pickle.load(input_file)
             self.beta = pickle.load(input_file)
-            self.n_iter = pickle.load(input_file)
+            self.valid_split = pickle.load(input_file)
             self.V = pickle.load(input_file)
-            self.M = pickle.load(input_file)
             self.N_sum = pickle.load(input_file)
             self.z_mn = pickle.load(input_file)
             self.phi = pickle.load(input_file)
             self.theta = pickle.load(input_file)
+
+    def _query_sampling(self, test_docs, n_iter):
+
+        test_model = LDA(n_topic=self.K, alpha=self.alpha, beta=self.beta)
+        test_model._fit_GS(test_docs, self.V, n_iter=n_iter, verbose=False)
+        test_model._read_out_parameters()
+        return test_model.theta, test_model.N_sum
+
+    def perplexity(self, corpus, n_iter=1000):
+        if not hasattr(self, 'theta'):
+            raise Exception('You should fit model first')
+
+        if self.valid_split == 0.0:
+            raise Exception('All data in the corpus has been used for training')
+
+        M = int(corpus.M * (1 - self.valid_split))
+        test_docs = corpus.docs[M:]
+        new_theta, N_sum = self._query_sampling(test_docs, n_iter)
+
+        return self._perplexity(test_docs, self.phi, new_theta, N_sum)
+
+    def _perplexity(self, test_docs, phi, theta, N_sum):
+        expindex = 0.0
+        for m, doc in enumerate(test_docs):
+            for word in doc:
+                p = 0.0
+                for k in range(self.K):
+                    p += theta[m][k] * phi[k][word]
+                expindex += np.log(p)
+        return np.exp(-expindex / N_sum)
