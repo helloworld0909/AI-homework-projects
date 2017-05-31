@@ -83,10 +83,10 @@ class LDA(object):
                     if new_k != old_k:
                         update_k_count += 1
 
-
+            self._read_out_parameters()
             if verbose:
-                self.logger.info('<iter{}> update rate: {}'.format(it, float(update_k_count) / self.N_sum))
-        self._read_out_parameters()
+                self.logger.info('<iter{0}> perplexity: {1:.6g} update rate: {2:.6g}'.format(it, self.perplexity(docs),
+                                                                                  float(update_k_count) / self.N_sum))
 
     def _initialize(self, docs, V, M):
         self.N_sum = 0
@@ -162,7 +162,7 @@ class LDA(object):
         if not hasattr(self, 'theta'):
             raise Exception('You should fit model first')
         else:
-            M = self.theta[:,0].size
+            M = self.theta[:, 0].size
             document_topic_list = []
             for m in range(min(limit, M)):
                 topic_list = []
@@ -199,29 +199,16 @@ class LDA(object):
             self.phi = pickle.load(input_file)
             self.theta = pickle.load(input_file)
 
-    def _query_sampling(self, test_docs, n_iter):
-
-        test_model = LDA(n_topic=self.K, alpha=self.alpha, beta=self.beta)
-        test_model._fit_GS(test_docs, self.V, n_iter=n_iter, verbose=False)
-        test_model._read_out_parameters()
-        return test_model.theta, test_model.N_sum
-
-    def perplexity(self, corpus, n_iter=1000):
+    def perplexity(self, docs):
         if not hasattr(self, 'theta'):
             raise Exception('You should fit model first')
 
-        if self.valid_split == 0.0:
-            raise Exception('All data in the corpus has been used for training')
+        M = self.theta.shape[0]
+        return self._perplexity(docs[:M], self.phi, self.theta, self.N_sum)
 
-        M = int(corpus.M * (1 - self.valid_split))
-        test_docs = corpus.docs[M:]
-        new_theta, N_sum = self._query_sampling(test_docs, n_iter)
-
-        return self._perplexity(test_docs, self.phi, new_theta, N_sum)
-
-    def _perplexity(self, test_docs, phi, theta, N_sum):
+    def _perplexity(self, docs, phi, theta, N_sum):
         expindex = 0.0
-        for m, doc in enumerate(test_docs):
+        for m, doc in enumerate(docs):
             for word in doc:
                 p = 0.0
                 for k in range(self.K):
