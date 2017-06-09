@@ -5,6 +5,7 @@ import pickle
 import numpy as np
 
 from corpus import Corpus
+from util import weightedRandomChoice
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -116,7 +117,7 @@ class LDA(object):
         prob_k = self._full_conditional(m, word)
         prob_k /= prob_k.sum()
 
-        new_k = np.random.choice(self.K, 1, p=prob_k)[0]
+        new_k = weightedRandomChoice(prob_k)
         return new_k
 
     def _full_conditional(self, m, word):

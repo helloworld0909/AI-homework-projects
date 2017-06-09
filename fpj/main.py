@@ -30,11 +30,11 @@ def main():
     corpus = Corpus()
     corpus.load_ldac(menu_path + 'reuters.ldac')
     model = LDA(n_topic=20)
-    model.fit(corpus, valid_split=0.1, n_iter=10)
+    model.fit(corpus, valid_split=0.0, n_iter=10)
 
     perplexity = model.perplexity(corpus.docs)
     print perplexity
 
 if __name__ == '__main__':
-    output_reuters()
+    main()
 
