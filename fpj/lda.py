@@ -27,21 +27,21 @@ class LDA(object):
 
     def fit(self, corpus, valid_split=0.0, algorithm='GS', n_iter=1000, verbose=True):
         """
-        
-        :param corpus: 
+
+        :param corpus:
         corpus.Corpus()
-        
+
         :param valid_split:
-        
+
         :param n_iter:
-        
-        :param algorithm: 
+
+        :param algorithm:
         'GS'    ->  Gibbs sampling
         'VI'    ->  Variational Inference
-        
+
         :param verbose:
         True: print log information
-        
+
         :return: LDA
         """
         assert isinstance(corpus, Corpus), 'Input should be Corpus type'
@@ -113,32 +113,27 @@ class LDA(object):
 
     def _sample_topic(self, m, word):
 
-        prob_k = np.empty(self.K, dtype='float64')
-        for k in range(self.K):
-            prob_k[k] = self._full_conditional(m, k, word)
+        prob_k = self._full_conditional(m, word)
         prob_k /= prob_k.sum()
 
         new_k = np.random.choice(self.K, 1, p=prob_k)[0]
         return new_k
 
-    def _full_conditional(self, m, k, word):
+    def _full_conditional(self, m, word):
         """
         Compute p(z_i = k|z_-i, w)
         :param m: m-th document
-        :param k: k-th topic
         :param word: The id of the word
         :return: p(z_i = k|z_-i, w)
         """
-        return (self.n_kt[k][word] + self.beta) / (self.n_k[k] + self.V * self.beta) * (self.n_mk[m][k] + self.alpha)
+        return (self.n_kt[:, word] + self.beta) / (self.n_k + self.V * self.beta) * (self.n_mk[m, :] + self.alpha)
 
     def _read_out_parameters(self):
         for k in range(self.K):
-            for t in range(self.V):
-                self.phi[k][t] = (self.n_kt[k][t] + self.beta) / (self.n_k[k] + self.V * self.beta)
+            self.phi[k] = (self.n_kt[k] + self.beta) / (self.n_k[k] + self.V * self.beta)
 
         for m in range(self.n_m.size):
-            for k in range(self.K):
-                self.theta[m][k] = (self.n_mk[m][k] + self.alpha) / (self.n_m[m] + self.K * self.alpha)
+            self.theta[m] = (self.n_mk[m] + self.alpha) / (self.n_m[m] + self.K * self.alpha)
 
     def _fit_inference(self, corpus, valid_split, n_iter):
         pass
@@ -210,8 +205,6 @@ class LDA(object):
         expindex = 0.0
         for m, doc in enumerate(docs):
             for word in doc:
-                p = 0.0
-                for k in range(self.K):
-                    p += theta[m][k] * phi[k][word]
+                p = np.dot(theta[m, :], phi[:, word])
                 expindex += np.log(p)
         return np.exp(-expindex / N_sum)
