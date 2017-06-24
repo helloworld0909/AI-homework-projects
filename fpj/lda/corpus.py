@@ -82,7 +82,7 @@ class Corpus(object):
                 self.id2word[index] = movieId
             self.V = len(self.word2id)
 
-    def load_rating(self, filepath, positive_threshold=4):
+    def load_rating(self, filepath, positive_threshold=4, atleast_rated = 0):
 
         rating_dict = defaultdict(list)
         with open(filepath, 'r') as input_file:
@@ -94,7 +94,8 @@ class Corpus(object):
                     rating_dict[userId].append(self.word2id[movieID])
 
         for k, v in sorted(rating_dict.items(), key=lambda kv:int(kv[0])):
-            self.docs.append(np.array(v, dtype='intc'))
+            if len(v) >= atleast_rated:
+                self.docs.append(np.array(v, dtype='intc'))
 
         self.M = len(self.docs)
 
