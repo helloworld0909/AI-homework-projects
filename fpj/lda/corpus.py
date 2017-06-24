@@ -72,10 +72,41 @@ class Corpus(object):
             for index, line in enumerate(input_file):
                 self.context[index] = line.strip()
 
+    def load_movie(self, filepath):
+
+        with open(filepath, 'r') as input_file:
+            csv_first_line = input_file.readline()
+            for index, line in enumerate(input_file):
+                movieId = line.strip().split(',')[0]
+                self.word2id[movieId] = index
+                self.id2word[index] = movieId
+            self.V = len(self.word2id)
+
+    def load_rating(self, filepath, positive_threshold=4):
+
+        rating_dict = defaultdict(list)
+        with open(filepath, 'r') as input_file:
+            csv_first_line = input_file.readline()
+
+            for line in input_file:
+                userId, movieID, rating, _ = line.strip().split(',')
+                if float(rating) >= positive_threshold:
+                    rating_dict[userId].append(self.word2id[movieID])
+
+        for k, v in sorted(rating_dict.items(), key=lambda kv:int(kv[0])):
+            self.docs.append(np.array(v, dtype='intc'))
+
+        self.M = len(self.docs)
+
 
 if __name__ == '__main__':
-    corpus = Corpus()
-    corpus.load_ldac('input/reuters.ldac')
-    corpus.load_vocabulary('input/reuters.tokens')
+    # corpus = Corpus()
+    # corpus.load_ldac('input/reuters.ldac')
+    # corpus.load_vocabulary('input/reuters.tokens')
 
+    corpus = Corpus()
+    corpus.load_movie('input/ml-latest-small/movies.csv')
+    corpus.load_rating('input/ml-latest-small/ratings.csv')
+    print corpus.docs
+    print corpus.id2word[48]
 

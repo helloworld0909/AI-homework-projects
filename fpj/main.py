@@ -1,5 +1,5 @@
-from corpus import Corpus
-from lda import LDA
+from lda.corpus import Corpus
+from lda.lda import LDA
 
 menu_path = 'input/'
 
