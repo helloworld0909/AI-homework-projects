@@ -169,29 +169,33 @@ class LDA(object):
                     document_topic_list.append((corpus.context[m], tuple(topic_list)))
             return document_topic_list
 
+    def generate_word(self, theta=None):
+        if theta is None:
+            theta = self.theta
+        generate_prob = np.dot(self.phi.T, theta.T).T
+        return generate_prob
+
     def save_model(self, filepath='model/', protocol=0):
         if not os.path.exists(filepath):
             os.mkdir(filepath)
         with open(filepath + 'model.pkl', 'wb') as output_file:
-            pickle.dump(self.K, output_file, protocol)
-            pickle.dump(self.alpha, output_file, protocol)
-            pickle.dump(self.beta, output_file, protocol)
-            pickle.dump(self.valid_split, output_file, protocol)
-            pickle.dump(self.V, output_file, protocol)
-            pickle.dump(self.N_sum, output_file, protocol)
+            pickle.dump((self.K, self.alpha, self.beta, self.valid_split, self.V, self.N_sum), output_file, protocol)
             pickle.dump(self.z_mn, output_file, protocol)
+            pickle.dump(self.n_mk, output_file, protocol)
+            pickle.dump(self.n_m, output_file, protocol)
+            pickle.dump(self.n_kt, output_file, protocol)
+            pickle.dump(self.n_k, output_file, protocol)
             pickle.dump(self.phi, output_file, protocol)
             pickle.dump(self.theta, output_file, protocol)
 
     def load_model(self, filepath='model/'):
         with open(filepath + 'model.pkl', 'rb') as input_file:
-            self.K = pickle.load(input_file)
-            self.alpha = pickle.load(input_file)
-            self.beta = pickle.load(input_file)
-            self.valid_split = pickle.load(input_file)
-            self.V = pickle.load(input_file)
-            self.N_sum = pickle.load(input_file)
+            self.K, self.alpha, self.beta, self.valid_split, self.V, self.N_sum = pickle.load(input_file)
             self.z_mn = pickle.load(input_file)
+            self.n_mk = pickle.load(input_file)
+            self.n_m = pickle.load(input_file)
+            self.n_kt = pickle.load(input_file)
+            self.n_k = pickle.load(input_file)
             self.phi = pickle.load(input_file)
             self.theta = pickle.load(input_file)
 
@@ -209,3 +213,97 @@ class LDA(object):
                 p = np.dot(theta[m, :], phi[:, word])
                 expindex += np.log(p)
         return np.exp(-expindex / N_sum)
+
+    ############--------------Prediction Part---------------###################
+
+    def predict(self, docs, n_iter=200):
+        if not hasattr(self, 'theta'):
+            raise Exception('You should fit model first')
+
+        # theta indicates p(theta|w_obs)
+        theta = self._fit_predict(docs, self.V, n_iter)
+        return self.generate_word(theta)
+
+    def _fit_predict(self, docs, V, n_iter):
+        M = len(docs)
+
+        n_mk, n_m, n_kt, n_k, z_mn = self._initialize_predict(docs, V, M)
+
+        for it in range(n_iter):
+            update_k_count = 0
+
+            for m, doc in enumerate(docs):
+                for n, word in enumerate(doc):
+                    old_k = z_mn[m][n]
+                    n_mk[m][old_k] -= 1
+                    n_kt[old_k][word] -= 1
+                    n_m[m] -= 1
+                    n_k[old_k] -= 1
+
+                    new_k = self._sample_topic_predict(m, word, n_mk, n_m, n_kt, n_k)
+
+                    n_mk[m][new_k] += 1
+                    n_kt[new_k][word] += 1
+                    n_m[m] += 1
+                    n_k[new_k] += 1
+
+                    z_mn[m][n] = new_k
+
+        theta = self._read_out_predict(V, n_mk, n_m)
+        return theta
+
+    def _initialize_predict(self, docs, V, M):
+
+        n_mk = np.zeros((M, self.K), dtype='intc')
+        n_m = np.zeros(M, dtype='intc')
+        n_kt = np.zeros((self.K, V), dtype='intc')
+        n_k = np.zeros(self.K, dtype='intc')
+
+        z_mn = []
+        for m, doc in enumerate(docs):
+
+            z_m = np.empty(len(doc), dtype='intc')
+            for n, word in enumerate(doc):
+                init_k = int(np.random.random(1) * self.K)
+                z_m[n] = init_k
+                n_mk[m][init_k] += 1
+                n_kt[init_k][word] += 1
+                n_m[m] += 1
+                n_k[init_k] += 1
+            z_mn.append(z_m)
+
+        return n_mk, n_m, n_kt, n_k, z_mn
+
+    def _sample_topic_predict(self, m, word, n_mk, n_m, n_kt, n_k):
+
+        prob_k = self._full_conditional_predict(m, word, n_mk, n_m, n_kt, n_k)
+        prob_k /= prob_k.sum()
+
+        new_k = weightedRandomChoice(prob_k)
+        return new_k
+
+    def _full_conditional_predict(self, m, word, n_mk, n_m, n_kt, n_k):
+        """
+        Compute p(z_i = k|z_-i, w)
+        :param m: m-th document
+        :param word: The id of the word
+        :return: p(z_i = k|z_-i, w)
+        """
+        return (self.n_kt[:, word] + n_kt[:, word] + self.beta) / (self.n_k + n_k + self.V * self.beta) * (
+        n_mk[m, :] + self.alpha)
+
+    def _read_out_predict(self, V, n_mk, n_m):
+
+        theta = np.empty((n_m.size, self.K), dtype='float64')
+
+        for m in range(n_m.size):
+            theta[m] = (n_mk[m] + self.alpha) / (n_m[m] + self.K * self.alpha)
+
+        return theta
+
+    @staticmethod
+    def predictive_perplexity(generate_prob, Y):
+        expindex = 0.0
+        for prob, y in zip(generate_prob, Y):
+            expindex += np.log(prob[y])
+        return np.exp(-expindex / len(Y))
