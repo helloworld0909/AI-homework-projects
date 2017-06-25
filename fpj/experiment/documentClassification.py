@@ -9,5 +9,8 @@ sys.path.append(os.path.dirname(cwd))
 from fpj.lda.corpus import Corpus
 from fpj.lda.lda import LDA
 
+from fpj.experiment.documentModeling import fit_reuters
+
+
 
 
