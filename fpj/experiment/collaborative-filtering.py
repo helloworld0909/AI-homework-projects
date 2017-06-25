@@ -35,7 +35,7 @@ def fit_movieLens():
 
     model.fit(corpus, valid_split=valid_split, n_iter=100)
 
-    model.save_model(protocol=2, filepath='example/')
+    model.save_model(protocol=2, filepath='save/')
 
 def collaborative_filtering():
     corpus = load()
