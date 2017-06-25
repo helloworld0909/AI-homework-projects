@@ -1,17 +1,20 @@
-# from __future__ import absolute_import
+from __future__ import absolute_import
 import os
 import sys
-sys.path.append("..")
 
-from ..lda.corpus import Corpus
-from ..lda.lda import LDA
+cwd = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(cwd)
+sys.path.append(os.path.dirname(cwd))
 
-menu_path = os.path.dirname(os.path.abspath('..')) + '/input/ml-20m/'
+from fpj.lda.corpus import Corpus
+from fpj.lda.lda import LDA
+
+menu_path = cwd + '/input/ml-20m/'
 
 valid_split = 0.1
 positive_threshold = 4.0
-atleast_rated = 0
-n_topic = 20
+atleast_rated = 30
+n_topic = 100
 
 def load():
     corpus = Corpus()
@@ -25,8 +28,8 @@ def fit_movieLens():
     corpus = load()
 
     # Recommended choice of parameters
-    alpha = 50 / n_topic
-    beta = 200 / corpus.V
+    alpha = 1.0 / n_topic
+    beta = 200.0 / corpus.V
 
     model = LDA(n_topic=n_topic, alpha=alpha, beta=beta)
 
