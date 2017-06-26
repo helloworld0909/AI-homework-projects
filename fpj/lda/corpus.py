@@ -1,5 +1,7 @@
 from collections import defaultdict
 import numpy as np
+import string
+import json
 
 
 class Corpus(object):
@@ -98,6 +100,59 @@ class Corpus(object):
                 self.docs.append(np.array(v, dtype='intc'))
 
         self.M = len(self.docs)
+
+    def load_reuters(self, filepath, stopwordpath):
+
+        preprocessor = Preprocessor(stopwordpath)
+        keyplace = 'usa'
+        self.context[keyplace] = []
+
+        with open(filepath, 'r') as input_file:
+            docs_json = json.load(input_file)
+        for item_id, item in enumerate(docs_json):
+            if 'body' not in item:
+                continue
+            doc = []
+            body = item['body']
+            for word in body.strip().split():
+                word = preprocessor.remove_punctuation(word.strip())
+                if not preprocessor.is_stopword(word):
+                    if word not in self.word2id:
+                        current_id = len(self.word2id)
+                        self.word2id[word] = current_id
+                        self.id2word[current_id] = word
+                    doc.append(self.word2id[word])
+            self.docs.append(np.array(doc, dtype='intc'))
+
+            if "places" in item and keyplace in item["places"]:
+                self.context[keyplace].append(1)
+            else:
+                self.context[keyplace].append(0)
+
+        self.V = len(self.word2id)
+        self.M = len(self.docs)
+
+class Preprocessor(object):
+
+    def __init__(self, filepath):
+        self.stopword = set()
+        self.load_stopword(filepath)
+        self.punctuation = string.punctuation
+
+    def load_stopword(self, filepath):
+        with open(filepath, 'r') as input_file:
+            for line in input_file:
+                self.stopword.add(line.strip())
+
+    def is_stopword(self, word):
+        return word in self.stopword
+
+    def remove_punctuation(self, word):
+        for c in self.punctuation:
+            word = word.replace(c, '')
+        return word
+
+
 
 
 if __name__ == '__main__':
