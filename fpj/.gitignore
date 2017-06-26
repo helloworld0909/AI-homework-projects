@@ -94,8 +94,5 @@ ENV/
 
 # User customs
 *.pdf
-*.zip
-*.out
-*.docx
-*.tmp
-/*/.idea
+presentation/
+reference/
