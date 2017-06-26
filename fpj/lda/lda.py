@@ -175,7 +175,7 @@ class LDA(object):
         generate_prob = np.dot(self.phi.T, theta.T).T
         return generate_prob
 
-    def save_model(self, filepath='model/', protocol=0):
+    def save_model(self, filepath='save/', protocol=0):
         if not os.path.exists(filepath):
             os.mkdir(filepath)
         with open(filepath + 'model.pkl', 'wb') as output_file:
@@ -188,7 +188,7 @@ class LDA(object):
             pickle.dump(self.phi, output_file, protocol)
             pickle.dump(self.theta, output_file, protocol)
 
-    def load_model(self, filepath='model/'):
+    def load_model(self, filepath='save/'):
         with open(filepath + 'model.pkl', 'rb') as input_file:
             self.K, self.alpha, self.beta, self.valid_split, self.V, self.N_sum = pickle.load(input_file)
             self.z_mn = pickle.load(input_file)
@@ -214,7 +214,7 @@ class LDA(object):
                 expindex += np.log(p)
         return np.exp(-expindex / N_sum)
 
-    ############--------------Prediction Part---------------###################
+################--------------Prediction Part---------------###################
 
     def predict(self, docs, n_iter=200):
         if not hasattr(self, 'theta'):
