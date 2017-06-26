@@ -11,17 +11,18 @@ from fpj.lda.lda import LDA
 
 menu_path = cwd + '/input/reuters/'
 
-def fit_reuters():
+def fit_reuters(n_topic=20, n_iter=200, save=True):
     corpus = Corpus()
     corpus.load_ldac(menu_path + 'reuters.ldac')
-    model = LDA(n_topic=20)
-    model.fit(corpus, n_iter=50)
-
-    model.save_model(protocol=2)
+    model = LDA(n_topic=n_topic)
+    model.fit(corpus, n_iter=n_iter)
+    if save:
+        model.save_model(filepath='save/reuters_model.pkl', protocol=2)
+    return model
 
 def output_reuters():
     model = LDA()
-    model.load_model()
+    model.load_model(filepath='save/reuters_model.pkl')
 
     corpus = Corpus()
     corpus.load_ldac(menu_path + 'reuters.ldac')
@@ -44,5 +45,6 @@ def main():
     print perplexity
 
 if __name__ == '__main__':
-    main()
+    fit_reuters()
+    output_reuters()
 
