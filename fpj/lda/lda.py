@@ -14,7 +14,7 @@ logging.basicConfig(
 
 
 class LDA(object):
-    def __init__(self, n_topic=10, alpha=0.5, beta=0.1):
+    def __init__(self, n_topic=10, alpha=0.05, beta=0.1):
         self.V = 0
         self.K = n_topic
         self.alpha = alpha

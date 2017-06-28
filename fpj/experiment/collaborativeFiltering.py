@@ -41,7 +41,7 @@ def collaborative_filtering():
     corpus = load()
 
     model = LDA(n_topic=20)
-    model.load_model(filepath='example/')
+    model.load_model(filepath='save/')
 
     X = corpus.docs[-int(valid_split * corpus.M):]
 
